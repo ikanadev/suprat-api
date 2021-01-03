@@ -1,0 +1,18 @@
+version: '3.7'
+services:
+  supratdb:
+    image: postgres:latest
+    container_name: supratdb
+    environment: 
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=supratdb
+    expose: 
+      - 5432
+    ports: 
+      - "5432:5432"
+    networks:
+      - suprat_net 
+networks:
+  suprat_net:
+    driver: bridge

@@ -1,15 +1,48 @@
 package user
 
-import "github.com/vmkevv/suprat-api/ent"
+import (
+	"context"
+	"fmt"
+	"time"
 
-// HandlerActions interface which represents all posibles actions
-type HandlerActions interface {
-	Save(name, lastName, email, password string) (*ent.User, error)
+	"github.com/gofiber/fiber/v2"
+	"github.com/vmkevv/suprat-api/ent"
+	"github.com/vmkevv/suprat-api/ent/user"
+	"github.com/vmkevv/suprat-api/internal/services"
+)
+
+// actions is an struct which implements the HandlerActions interface
+type actions struct {
+	db *ent.Client
 }
 
-type actions struct{}
-
 // Save saves an user to the database
-func (a actions) Save(name, lastName, email, password string) (*ent.User, error) {
-	return nil, nil
+func (a actions) Save(ctx context.Context, name, lastName, email, password string) (services.User, error) {
+	var savedUser services.User
+	start := time.Now()
+	exists, err := a.db.User.Query().Where(user.EmailEQ(email)).Exist(ctx)
+	if err != nil {
+		return savedUser, err
+	}
+	if exists {
+		return savedUser, services.NewSurpErr(fiber.StatusConflict, "Ya existe una cuenta con ese email", "")
+	}
+	fmt.Printf("Check email: %s\n", time.Since(start))
+	start = time.Now()
+	hashedPasswd, err := HashPassword(password)
+	if err != nil {
+		return savedUser, err
+	}
+	fmt.Printf("Hash Pass: %s\n", time.Since(start))
+	start = time.Now()
+	entUser, err := a.db.User.Create().SetName(name).SetLastName(lastName).SetEmail(email).SetPassword(hashedPasswd).Save(ctx)
+	if err != nil {
+		return savedUser, err
+	}
+	fmt.Printf("Save to db: %s\n", time.Since(start))
+	savedUser.Name = entUser.Name
+	savedUser.LastName = entUser.LastName
+	savedUser.Email = entUser.Email
+	savedUser.ID = int64(entUser.ID)
+	return savedUser, nil
 }
