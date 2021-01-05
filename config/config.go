@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"fmt"
@@ -14,6 +14,14 @@ type Config struct {
 		Host     string
 		Port     string
 	}
+}
+
+// PostgresConn returns the postgres connection string
+func (conf Config) PostgresConn() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Port, conf.DB.DBName,
+	)
 }
 
 // GetConfig reads the env variables and return them
@@ -37,6 +45,15 @@ func GetConfig() (Config, error) {
 	conf.DB.Host = os.Getenv("DB_HOST")
 	conf.DB.Port = os.Getenv("DB_PORT")
 	return conf, nil
+}
+
+// SetEnvs this will set the env variables needed to connect a db, just for testing purposes
+func SetEnvs() {
+	os.Setenv("DB_USER", "postgres")
+	os.Setenv("DB_NAME", "supratdb")
+	os.Setenv("DB_PASSWORD", "12345")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_PORT", "5432")
 }
 
 func checkEnv(key string) error {

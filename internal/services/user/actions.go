@@ -2,8 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/vmkevv/suprat-api/ent"
@@ -19,7 +17,6 @@ type actions struct {
 // Save saves an user to the database
 func (a actions) Save(ctx context.Context, name, lastName, email, password string) (services.User, error) {
 	var savedUser services.User
-	start := time.Now()
 	exists, err := a.db.User.Query().Where(user.EmailEQ(email)).Exist(ctx)
 	if err != nil {
 		return savedUser, err
@@ -27,19 +24,14 @@ func (a actions) Save(ctx context.Context, name, lastName, email, password strin
 	if exists {
 		return savedUser, services.NewSurpErr(fiber.StatusConflict, "Ya existe una cuenta con ese email", "")
 	}
-	fmt.Printf("Check email: %s\n", time.Since(start))
-	start = time.Now()
 	hashedPasswd, err := HashPassword(password)
 	if err != nil {
 		return savedUser, err
 	}
-	fmt.Printf("Hash Pass: %s\n", time.Since(start))
-	start = time.Now()
 	entUser, err := a.db.User.Create().SetName(name).SetLastName(lastName).SetEmail(email).SetPassword(hashedPasswd).Save(ctx)
 	if err != nil {
 		return savedUser, err
 	}
-	fmt.Printf("Save to db: %s\n", time.Since(start))
 	savedUser.Name = entUser.Name
 	savedUser.LastName = entUser.LastName
 	savedUser.Email = entUser.Email
